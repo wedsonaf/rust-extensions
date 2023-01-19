@@ -53,6 +53,7 @@
 // See https://github.com/hyperium/tonic/issues/1056
 #![allow(clippy::derive_partial_eq_without_eq)]
 
+use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fmt::Debug, ops::AddAssign, time::SystemTime};
 use tokio_stream::Stream;
 
@@ -79,7 +80,7 @@ pub mod api {
 }
 
 /// Snapshot kinds.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub enum Kind {
     Unknown,
     View,
@@ -94,7 +95,7 @@ impl Default for Kind {
 }
 
 /// Information about a particular snapshot.
-#[derive(Debug)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct Info {
     /// Active or committed snapshot.
     pub kind: Kind,
