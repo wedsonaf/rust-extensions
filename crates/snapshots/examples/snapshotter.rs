@@ -14,7 +14,9 @@
    limitations under the License.
 */
 
-use std::{collections::HashMap, env};
+#![feature(type_alias_impl_trait)]
+
+use std::{collections::HashMap, env, sync::Arc};
 
 use containerd_snapshots as snapshots;
 use containerd_snapshots::{api, Info, Usage};
@@ -22,6 +24,7 @@ use futures::TryFutureExt;
 use log::info;
 use snapshots::tonic::transport::Server;
 use tokio::net::UnixListener;
+use tokio_stream::Stream;
 
 #[derive(Default)]
 struct Example;
@@ -91,6 +94,13 @@ impl snapshots::Snapshotter for Example {
         info!("Remove: {}", key);
         Ok(())
     }
+
+    type InfoStream = impl Stream<Item = Result<Info, Self::Error>> + Send + 'static;
+    async fn walk(&self) -> Result<Self::InfoStream, Self::Error> {
+        Ok(async_stream::try_stream! {
+            yield Info::default();
+        })
+    }
 }
 
 #[cfg(unix)]
@@ -121,7 +131,7 @@ async fn main() {
     };
 
     Server::builder()
-        .add_service(snapshots::server(example))
+        .add_service(snapshots::server(Arc::new(example)))
         .serve_with_incoming(incoming)
         .await
         .expect("Serve failed");

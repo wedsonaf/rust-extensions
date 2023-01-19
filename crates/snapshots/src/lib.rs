@@ -54,6 +54,7 @@
 #![allow(clippy::derive_partial_eq_without_eq)]
 
 use std::{collections::HashMap, fmt::Debug, ops::AddAssign, time::SystemTime};
+use tokio_stream::Stream;
 
 pub use tonic;
 
@@ -154,7 +155,7 @@ pub trait Snapshotter: Send + Sync + 'static {
     /// Error type returned from the underlying snapshotter implementation.
     ///
     /// This type must be convertable to GRPC status.
-    type Error: Debug + Into<tonic::Status>;
+    type Error: Debug + Into<tonic::Status> + Send;
 
     /// Returns the info for an active or committed snapshot by name or key.
     ///
@@ -260,4 +261,7 @@ pub trait Snapshotter: Send + Sync + 'static {
     async fn clear(&self) -> Result<(), Self::Error> {
         Ok(())
     }
+
+    type InfoStream: Stream<Item = Result<Info, Self::Error>> + Send + 'static;
+    async fn walk(&self) -> Result<Self::InfoStream, Self::Error>;
 }
